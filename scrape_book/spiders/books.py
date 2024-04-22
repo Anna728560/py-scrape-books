@@ -63,4 +63,3 @@ class BooksSpider(scrapy.Spider):
             "description": response.css(".product_page > p::text").get(),
             "upc": response.css(".table td::text").getall()[0],
         }
-
