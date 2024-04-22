@@ -6,6 +6,16 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 
 
+CONVERT_WORD_TO_DIGIT = {
+        "Zero": 0,
+        "One": 1,
+        "Two": 2,
+        "Three": 3,
+        "Four": 4,
+        "Five": 5,
+    }
+
+
 class BooksSpider(scrapy.Spider):
     """
     This spider scrapes book details from books.toscrape.com.
@@ -53,27 +63,8 @@ class BooksSpider(scrapy.Spider):
             "title": title,
             "price": price,
             "amount_in_stock": amount_in_stock,
-            "rating": convert_word_to_digit(rating),
+            "rating": CONVERT_WORD_TO_DIGIT[rating],
             "category": category,
             "description": description,
             "upc": upc
         }
-
-
-def convert_word_to_digit(word: str) -> int:
-    """
-    Convert word representation of number to digit.
-    """
-    numbers = {
-        "Zero": 0,
-        "One": 1,
-        "Two": 2,
-        "Three": 3,
-        "Four": 4,
-        "Five": 5,
-        "Six": 6,
-        "Seven": 7,
-        "Eight": 8,
-        "Nine": 9
-    }
-    return numbers[word]
