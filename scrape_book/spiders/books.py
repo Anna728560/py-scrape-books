@@ -30,11 +30,11 @@ class BooksSpider(scrapy.Spider):
         self.driver = webdriver.Chrome()
 
     @staticmethod
-    def _get_numeric_price(price: str):
+    def _get_numeric_price(price: str) -> float:
         return float(price.replace("£", ""))
 
     @staticmethod
-    def _get_numeric_amount_in_stock(amount_in_stock):
+    def _get_numeric_amount_in_stock(amount_in_stock: str) -> int:
         return int(amount_in_stock.re(r"In stock \((\d+) available\)")[0])
 
     def parse(self, response: Response, **kwargs) -> None:
