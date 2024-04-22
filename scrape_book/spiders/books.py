@@ -1,12 +1,10 @@
 import scrapy
-from scrapy import Selector
 from scrapy.http import Response
 
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 
 
-CONVERT_WORD_TO_DIGIT = {
+WORD_TO_DIGIT_MAP = {
         "Zero": 0,
         "One": 1,
         "Two": 2,
@@ -35,8 +33,8 @@ class BooksSpider(scrapy.Spider):
         """
         Parse the response.
         """
-        for book in response.css(".product_pod"):
-            yield from self._get_detail_book_info(response, book)
+        for book in response.css(".product_pod > h3 > a"):
+            yield response.follow(book, callback=self.parse_detail_book_info)
 
         next_button = response.css(".pager > li")[-1].css("a::attr(href)").get()
 
@@ -44,27 +42,16 @@ class BooksSpider(scrapy.Spider):
             next_page_url = response.urljoin(next_button)
             yield scrapy.Request(next_page_url, callback=self.parse)
 
-    def _get_detail_book_info(self, response: Response, book: Selector) -> None:
+    def parse_detail_book_info(self, response: Response):
         """
-        Extract detailed book information.
+        Parse book details.
         """
-        detailed_url = response.urljoin(book.css("h3 > a::attr(href)").get())
-        self.driver.get(detailed_url)
-
-        title = self.driver.find_element(By.CSS_SELECTOR, "h1").text
-        price = float(self.driver.find_element(By.CSS_SELECTOR, ".price_color").text.replace("£", ""))
-        amount_in_stock = self.driver.find_element(By.CSS_SELECTOR, ".instock.availability").text
-        rating = self.driver.find_element(By.CSS_SELECTOR, "p.star-rating").get_attribute("class").split(" ")[1]
-        category = self.driver.find_element(By.CSS_SELECTOR, "ul.breadcrumb > li:nth-last-child(2) > a").text
-        description = self.driver.find_element(By.CSS_SELECTOR, ".product_page > p").text
-        upc = self.driver.find_element(By.CSS_SELECTOR, "tr:nth-child(1) > td").text
-
         yield {
-            "title": title,
-            "price": price,
-            "amount_in_stock": amount_in_stock,
-            "rating": CONVERT_WORD_TO_DIGIT[rating],
-            "category": category,
-            "description": description,
-            "upc": upc
+            "title": response.css(".product_main > h1::text").get(),
+            "price": float(response.css(".price_color::text").get().replace("£", "")),
+            "amount_in_stock": int(response.css(".instock.availability::text").re(r"In stock \((\d+) available\)")[0]),
+            "rating": WORD_TO_DIGIT_MAP[response.css("p.star-rating::attr(class)").get().split(" ")[1]],
+            "category": response.css("ul.breadcrumb > li:nth-last-child(2) > a::text").get(),
+            "description": response.css(".product_page > p::text").get(),
+            "upc": response.css(".table td::text").getall()[0],
         }
