@@ -29,6 +29,14 @@ class BooksSpider(scrapy.Spider):
         super().__init__(**kwargs)
         self.driver = webdriver.Chrome()
 
+    @staticmethod
+    def _get_numeric_price(price: str):
+        return float(price.replace("£", ""))
+
+    @staticmethod
+    def _get_numeric_amount_in_stock(amount_in_stock):
+        return int(amount_in_stock.re(r"In stock \((\d+) available\)")[0])
+
     def parse(self, response: Response, **kwargs) -> None:
         """
         Parse the response.
@@ -48,10 +56,11 @@ class BooksSpider(scrapy.Spider):
         """
         yield {
             "title": response.css(".product_main > h1::text").get(),
-            "price": float(response.css(".price_color::text").get().replace("£", "")),
-            "amount_in_stock": int(response.css(".instock.availability::text").re(r"In stock \((\d+) available\)")[0]),
+            "price": self._get_numeric_price(response.css(".price_color::text").get()),
+            "amount_in_stock": self._get_numeric_amount_in_stock(response.css(".instock.availability::text")),
             "rating": WORD_TO_DIGIT_MAP[response.css("p.star-rating::attr(class)").get().split(" ")[1]],
             "category": response.css("ul.breadcrumb > li:nth-last-child(2) > a::text").get(),
             "description": response.css(".product_page > p::text").get(),
             "upc": response.css(".table td::text").getall()[0],
         }
+
